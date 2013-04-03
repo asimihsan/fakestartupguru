@@ -8,11 +8,11 @@
 gatherer:
 
     # Starting point, the JSON from the SWOOP data set
-    -   swoop_json_uri:     "https://github.com/StartupWeekend/googleio_contest/raw/master/datasets/events.json"
+    swoop_json_uri:     "https://github.com/StartupWeekend/googleio_contest/raw/master/datasets/events.json"
 
     # Where to persist the data. Filepaths are relative to this config file's
     # location.
-    -   sqlite_filepath:    "../data/database.sqlite"
+    sqlite_filepath:    "../data/database.sqlite"
 
 # ----------------------------------------------------------------------------
 

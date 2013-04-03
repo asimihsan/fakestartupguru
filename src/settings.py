@@ -9,14 +9,14 @@ SETTINGS_YAML_FILEPATH = os.path.abspath(os.path.join(__file__, os.pardir, "sett
 # -----------------------------------------------------------------------------
 
 class Settings(object):
-    def __init__(settings_yaml_filepath = SETTINGS_YAML_FILEPATH):
+    def __init__(self, settings_yaml_filepath = SETTINGS_YAML_FILEPATH):
         self.settings_yaml_filepath = settings_yaml_filepath
         with open(self.settings_yaml_filepath) as f_in:
             self.yaml_object = yaml.safe_load(f_in)
 
     @property
     def gatherer_swoop_json_uri(self):
-        return self.yaml_object['gathered']['swoop_json_uri']
+        return self.yaml_object['gatherer']['swoop_json_uri']
 
     @property
     def gatherer_sqlite_filepath(self):
