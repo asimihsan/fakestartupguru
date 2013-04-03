@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 import logging
+import datetime
 
 import models
 
@@ -26,7 +27,16 @@ logger.addHandler(ch)
 
 
 class HttpFetcher(object):
-    def get(self, uri):
+    # -------------------------------------------------------------------------
+    #   startupweekend.org 403's any unusual User-Agent strings, so let's
+    #   set up some generic headers to use on all requests here.
+    # -------------------------------------------------------------------------
+    GENERIC_HEADERS = {
+                       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:19.0) Gecko/20100101 Firefox/19.0"
+                      }
+    # -------------------------------------------------------------------------
+
+    def get(self, uri, refresh=False):
         logger = logging.getLogger("%s.HttpFetcher.get" % APP_NAME)
         logger.debug("entry. HTTP GET for URI: '%s'" % uri)
 
@@ -35,7 +45,7 @@ class HttpFetcher(object):
         # -------------------------------------------------------------------------
         existing_webpage = models.Webpage.select() \
                                          .where(models.Webpage.uri == uri)
-        if existing_webpage.exists():
+        if not refresh and existing_webpage.exists():
             webpage = existing_webpage.get()
             logger.debug("Found previously retrieved copy of URI from: '%s'" % webpage.retrieved_date)
             return webpage
@@ -44,9 +54,14 @@ class HttpFetcher(object):
         # -------------------------------------------------------------------------
         #   Retrieve and persist the webpage to prevent retrieving it repeatedly.
         # -------------------------------------------------------------------------
-        response = requests.get(uri)
+        if refresh and existing_webpage.exists():
+            logger.debug("deleting existing cached webpage.")
+            existing_webpage.get().delete_instance()
+        response = requests.get(uri, headers=self.GENERIC_HEADERS)
+        if response.status_code != 200:
+            logger.warning("non-200 response code %s, headers: %s" % (response.status_code, response.headers))
         webpage = models.Webpage(contents = response.text,
-                                 uri = settings.gatherer_swoop_json_uri,
+                                 uri = uri,
                                  retrieved_date = datetime.datetime.now())
         webpage.save()
         # -------------------------------------------------------------------------

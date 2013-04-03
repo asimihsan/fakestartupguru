@@ -67,11 +67,23 @@ class Event(BaseDatabaseModel):
         return "swoop_id: '%s', city: '%s', country: '%s', start_date: '%s', website: '%s'" % \
             (self.swoop_id, self.city, self.country, self.start_date, self.website)
 
+    @property
+    def safe_website(self):
+        """ SWOOP dataset does not contain valid URIs, so fix them up here."""
+        if not self.website.startswith("http://"):
+            return "http://%s" % self.website
+        return self.website
+
 class Official(BaseDatabaseModel):
     full_name = CharField()
+    job_title = CharField(null=True)
     twitter_username = CharField(null=True)
     bio_text = TextField(null=True)
     event = ForeignKeyField(Event, related_name='officials')
+
+    def __unicode__(self):
+        return "full_name: %s, job_title: %s, twitter_username: %s, event: %s" % \
+            (self.full_name, self.job_title, self.twitter_username, self.event)
 
 models_in_create_order = [
                           Webpage,
