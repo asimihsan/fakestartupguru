@@ -13,7 +13,15 @@ gatherer:
     # Where to persist the data. Filepaths are relative to this config file's
     # location.
     sqlite_filepath:    "../data/database.sqlite"
+# ----------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------
+#   Analyzer settings.
+# ----------------------------------------------------------------------------
+analyzer:
+
+    # Number of K-folds to use for cross-validation.
+    number_of_k_folds:  10
 # ----------------------------------------------------------------------------
 
 

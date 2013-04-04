@@ -122,10 +122,18 @@ def add_officials(event):
     #   media links.
     # -------------------------------------------------------------------------
     doc = lxml.html.fromstring(webpage.contents)
-    judges_section = doc.get_element_by_id("judges")
-    judges = judges_section.cssselect(".judge")
-    mentors_section = doc.get_element_by_id("mentors")
-    mentors = mentors_section.cssselect(".mentor")
+    try:
+        judges_section = doc.get_element_by_id("judges")
+        judges = judges_section.cssselect(".judge")
+    except:
+        judges = []
+    logger.debug("number of judges: %s" % len(judges))
+    try:
+        mentors_section = doc.get_element_by_id("mentors")
+        mentors = mentors_section.cssselect(".mentor")
+    except:
+        mentors = []
+    logger.debug("number of mentors: %s" % len(mentors))
     for official in itertools.chain(judges, mentors):
 
         # ---------------------------------------------------------------------
@@ -191,7 +199,7 @@ def main():
     #   what other Startup Weekend's do with their sites. It'll be an uphill
     #   battle to parse them all perfectly.
     # -------------------------------------------------------------------------
-    oldest_event_datetime =  datetime.datetime.now() - datetime.timedelta(weeks = 4.5 * 6)
+    oldest_event_datetime =  datetime.datetime.now() - datetime.timedelta(weeks = 4.5 * 12)
     newest_event_datetime = datetime.datetime.now() - datetime.timedelta(days = 1)
     events = models.Event.select() \
                          .where(models.Event.start_date >= oldest_event_datetime,
@@ -204,10 +212,7 @@ def main():
             add_officials(event)
         except:
             logger.exception("Unhandled exception for event with SWOOP id: '%s', URI: '%s'" % (event.swoop_id, event.safe_website))
-        logger.debug("total number of officials: %s" % models.Official.select().count())
     # -------------------------------------------------------------------------
-
-    import ipdb; ipdb.set_trace()
 
 if __name__ == "__main__":
     main()
