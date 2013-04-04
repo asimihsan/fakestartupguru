@@ -22,6 +22,12 @@ analyzer:
 
     # Number of K-folds to use for cross-validation.
     number_of_k_folds:  10
+
+    # Where to persist the tagged and chunked data as a pickle. This takes
+    # a long time to generate so will be useful to store off. Despite being
+    # tagged and chunked it's of course segmented and tokenized so can e.g.
+    # do word counts.
+    tagged_chunked_filepath:    "../data/tagged_chunked.pickle"
 # ----------------------------------------------------------------------------
 
 

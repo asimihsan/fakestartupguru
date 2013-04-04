@@ -23,3 +23,7 @@ class Settings(object):
         relative_path = self.yaml_object['gatherer']['sqlite_filepath']
         return os.path.abspath(os.path.join(__file__, os.pardir, relative_path))
 
+    @property
+    def analyzer_tagged_chunked_filepath(self):
+        relative_path = self.yaml_object['analyzer']['tagged_chunked_filepath']
+        return os.path.abspath(os.path.join(__file__, os.pardir, relative_path))
