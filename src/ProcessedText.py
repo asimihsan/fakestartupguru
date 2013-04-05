@@ -1,6 +1,30 @@
 import os
 import sys
 import nltk
+import json
+import types
+import math
+
+# -----------------------------------------------------------------------------
+#   Constants.
+# -----------------------------------------------------------------------------
+APP_NAME = "ProcessedText"
+LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
+LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+#   Logging.
+# -----------------------------------------------------------------------------
+import logging
+logger = logging.getLogger(APP_NAME)
+logger.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+# -----------------------------------------------------------------------------
 
 def process_text(text):
     logger = logging.getLogger("%s.process_text" % APP_NAME)
@@ -19,6 +43,23 @@ def process_text(text):
     sentences = [nltk.ne_chunk(sent) for sent in sentences]
 
     return sentences
+
+class ProcessedTextJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if not isinstance(obj, ProcessedText):
+            return super(ProcessedTextJSONEncoder, self).default(obj)
+        else:
+            return obj.get_dict_representation()
+
+class ProcessedTextJSONDecoder(json.JSONDecoder):
+    @staticmethod
+    def decode(obj):
+        if isinstance(obj, str):
+            list_of_dicts = json.loads(obj)
+            return [ProcessedTextJSONDecoder.decode(elem) for elem in list_of_dicts]
+        else:
+            assert(isinstance(obj, dict))
+            return ProcessedText.initialize_from_dict(obj)
 
 class ProcessedText(object):
     """Wrapper around an Official ORM object. It will grab the biography and
@@ -65,26 +106,82 @@ class ProcessedText(object):
             return False
         return True
 
-    def __init__(self, official):
+    # -------------------------------------------------------------------------
+    #   Pair of methods to help serialize into deserialize out of JSON.
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def initialize_from_dict(obj):
+        pt = ProcessedText(obj['id'], obj['text'], initialize=False)
+        pt.is_text_english = obj.get('is_text_english', False)
+        pt.is_interesting = obj.get('is_interesting', False)
+        pt.tags_words_counts = obj.get('tags_words_counts', None)
+        pt.tagged_sentences = obj.get('tagged_sentences', None)
+
+        # ---------------------------------------------------------------------
+        #   Convert the lists of (key, value) on the second level back into
+        #   dictionaries with tuples as keys.
+        # ---------------------------------------------------------------------
+        pt.ngram_words = obj.get('ngram_words', None)
+        if pt.ngram_words is not None:
+            pt.ngram_words = dict( (int(k), dict((tuple(v0), int(v1))
+                                   for (v0, v1) in v))
+                                   for (k, v) in pt.ngram_words )
+        pt.ngram_tags = obj.get('ngram_tags', None)
+        if pt.ngram_tags is not None:
+            pt.ngram_tags = dict( (int(k), dict((tuple(v0), int(v1))
+                                  for (v0, v1) in v))
+                                  for (k, v) in pt.ngram_tags )
+        # ---------------------------------------------------------------------
+
+        return pt
+
+    def get_dict_representation(self):
+        return_value = {}
+        return_value['id'] = self.id
+        return_value['text'] = self.text
+        return_value['is_text_english'] = self.is_text_english
+        return_value['is_interesting'] = self.is_interesting
+        return_value['tags_words_counts'] = self.tags_words_counts
+        return_value['tagged_sentences'] = self.tagged_sentences
+
+        # ---------------------------------------------------------------------
+        # JSON only supports using strings as keys of dictionaries. Hence we
+        # convert our dictionaries into a sorted list of (key, value) pairs,
+        # and convert back to a dict when we deserialize.
+        # ---------------------------------------------------------------------
+        return_value['ngram_words'] = sorted((k, sorted(v.iteritems()))
+                                             for (k, v) in self.ngram_words.iteritems())
+        return_value['ngram_tags'] = sorted((k, sorted(v.iteritems()))
+                                            for (k, v) in self.ngram_tags.iteritems())
+        # ---------------------------------------------------------------------
+
+        return return_value
+    # -------------------------------------------------------------------------
+
+    def __init__(self, id, text, initialize=True):
         # ---------------------------------------------------------------------
         #   Store Official ORM index and the raw text.
         # ---------------------------------------------------------------------
-        self.id = official.id
-        self.text = official.bio_text
+        self.id = id
+        self.text = text
         # ---------------------------------------------------------------------
 
+        if initialize == True:
+            self.initialize()
+
+    def initialize(self):
         # ---------------------------------------------------------------------
         #   Determine if the text is not English, or not interesting. If so
         #   skip the processing below and set some flags to make filtering
         #   easier.
         # ---------------------------------------------------------------------
         if self.is_text_english(self.text) == False:
-            logger.debug("official '%s' does not have English bio_text" % official)
+            logger.debug("official '%s' does not have English bio_text" % self.id)
             self.is_text_english = False
             return
         self.is_text_english = True
         if self.is_interesting(self.text) == False:
-            logger.debug("official '%s' does not have interesting bio_text" % official)
+            logger.debug("official '%s' does not have interesting bio_text" % self.id)
             self.is_interesting = False
             return
         self.is_interesting = True
@@ -92,9 +189,6 @@ class ProcessedText(object):
 
         # ---------------------------------------------------------------------
         #   Store the tagged and chunked sentences.
-        #
-        #   !!AI given all the counts below may not need to pickle this;
-        #   in fact if you don't pickle it this might work with PyPy.
         # ---------------------------------------------------------------------
         self.processed_text = process_text(self.text)
         # ---------------------------------------------------------------------
@@ -115,7 +209,8 @@ class ProcessedText(object):
         #       -   Second level key: a word that has been observed to match
         #           this tag.
         #       -   Second level value: count for this (word, tag) pair.
-        #
+        #   -   self.tagged_sentences: a list of lists. Each sublist
+        #       is a tuple (word, tag).
         #   The intention is that:
         #   -   self.ngram_words, by itself, will let you do basic language
         #       models.
@@ -126,34 +221,51 @@ class ProcessedText(object):
         self.ngram_words = dict([(i, {}) for i in xrange(1, self.maximum_ngram_size + 1)])
         self.ngram_tags = dict([(i, {}) for i in xrange(1, self.maximum_ngram_size + 1)])
         self.tags_words_counts = {}
+        self.tagged_sentences = []
         for sentence_tree in self.processed_text:
             words = []
             tags = []
+            tagged_sentence = []
             for element in sentence_tree:
                 if type(element) == nltk.tree.Tree:
                     # This is a tree, and hence a chunked named entity. Note
                     # that named entities are always POS tagged as "NNP", so
                     # we don't need them. We treat named entities as a type of
                     # tag.
-                    named_entity_type = "NE-%s" % element.node
-                    named_entity_content = ' '.join([elem[0] for elem in element.leaves()])
-                    if named_entity_type not in self.tags_words_counts:
-                        self.tags_words_counts[named_entity_type] = {}
-                    self.tags_words_counts[named_entity_type][named_entity_content] = \
-                        self.tags_words_counts[named_entity_type].get(named_entity_content, 0) + 1
+                    #
+                    # Note that for a chunked named entity e.g.
+                    #   NE-ORGANIZATION = "Harvard University"
+                    #
+                    # we convert it to n tags, one per word in the chunk, eg:
+                    #
+                    #   NE-ORGANIZATION-START = "Harvard"
+                    #   NE-ORGANIZATION-CONTINUE = "University"
+                    named_entity_type_start = "NE-%s-START" % element.node
+                    named_entity_type_continue = "NE-%s-CONTINUE" % element.node
+                    contents = [elem[0] for elem in element.leaves()]
+                    named_entity_content = [(contents[0], named_entity_type_start)] + \
+                                           [(elem, named_entity_type_continue) for elem in contents[1:]]
 
-                    # Treat named entities as one "tag", of type e.g. "NE-PERSON"
-                    tags.append(named_entity_type)
-                    words.extend([elem[0] for elem in element.leaves()])
+                    for (word, tag) in named_entity_content:
+                        if tag not in self.tags_words_counts:
+                            self.tags_words_counts[tag] = {}
+                        self.tags_words_counts[tag][word] = self.tags_words_counts[tag].get(word, 0) + 1
+
+                    tags.extend([tag for (word, tag) in named_entity_content])
+                    words.extend([word for (word, tag) in named_entity_content])
+                    tagged_sentence.extend(named_entity_content)
                 else:
                     # This is a (word, tag) pair.
                     word = element[0]
                     words.append(word)
                     tag = element[1]
                     tags.append(tag)
+                    tagged_sentence.append((word, tag))
                     if tag not in self.tags_words_counts:
                         self.tags_words_counts[tag] = {}
                     self.tags_words_counts[tag][word] = self.tags_words_counts[tag].get(word, 0) + 1
+
+            self.tagged_sentences.append(tagged_sentence)
 
             # -----------------------------------------------------------------
             #   Update n-gram counts for both words and tags. Note that
@@ -175,5 +287,17 @@ class ProcessedText(object):
                     self.ngram_tags[i][ngram] = self.ngram_tags[i].get(ngram, 0) + 1
             # -----------------------------------------------------------------
 
+        # ---------------------------------------------------------------------
+
+        # ---------------------------------------------------------------------
+        #   log10 all the counts.
+        #   !!AI useless because we need to sum up counts later.
+        # ---------------------------------------------------------------------
+        #for collection in [self.ngram_words,
+        #                   self.ngram_tags,
+        #                   self.tags_words_counts]:
+        #    for v1 in collection.itervalues():
+        #        for (k2, v2) in v1.iteritems():
+        #            v1[k2] = math.log10(v2)
         # ---------------------------------------------------------------------
 
