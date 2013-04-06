@@ -48,8 +48,8 @@ generator:
     #   parameters.
     # - testing is used to determine the model's goodness; we evaluate
     #   this using perplexity.
-    non_kfold_cross_validation_proportion: 0.1
-    non_kfold_testing_proportion: 0.1
+    non_kfold_cross_validation_proportion: 0
+    non_kfold_testing_proportion: 0.05
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------

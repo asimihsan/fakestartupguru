@@ -4,6 +4,9 @@ import nltk
 import json
 import types
 import math
+import re
+import pprint
+import string
 
 # -----------------------------------------------------------------------------
 #   Constants.
@@ -11,6 +14,8 @@ import math
 APP_NAME = "ProcessedText"
 LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
 LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
+re_unwanted_text = re.compile(r'(?:http://\S+|www.\S+)')
+re_unwanted_characters = re.compile("[^%s]" % "".join([elem for elem in string.ascii_letters + string.digits + string.punctuation + string.whitespace]))
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -30,17 +35,24 @@ def process_text(text):
     logger = logging.getLogger("%s.process_text" % APP_NAME)
     logger.debug("entry. text: '%s'" % text)
 
-    # 1. Segment raw text into sentences.
+    # 1. Pre-process raw text to completely remove some things, like
+    # URLs.
+    text = re_unwanted_text.sub('', text)
+    text = re_unwanted_characters.sub('', text)
+
+    # 2. Segment raw text into sentences.
     sentences = nltk.sent_tokenize(text)
 
-    # 2. Tokenize each sentence into words.
+    # 3. Tokenize each sentence into words.
     sentences = [nltk.word_tokenize(sent) for sent in sentences]
 
-    # 3. Apply part-of-speech (POS) tags to each word.
+    # 4. Apply part-of-speech (POS) tags to each word.
     sentences = [nltk.pos_tag(sent) for sent in sentences]
 
-    # 4. Chunk NNPs into tagged groups, e.g. "PERSON", "ORGANIZATION", etc.
+    # 5. Chunk NNPs into tagged groups, e.g. "PERSON", "ORGANIZATION", etc.
     sentences = [nltk.ne_chunk(sent) for sent in sentences]
+
+    logger.debug("sentences:%s" % (pprint.pformat(sentences), ))
 
     return sentences
 
@@ -73,7 +85,7 @@ class ProcessedText(object):
     #   !!AI surely constants belong in settings.yaml.
     # -------------------------------------------------------------------------
     english_vocab = set(w.lower() for w in nltk.corpus.words.words())
-    unusual_proportion_threshold = 0.75
+    unusual_proportion_threshold = 0.5
     interesting_words_threshold = 20
     # -------------------------------------------------------------------------
 
@@ -89,15 +101,23 @@ class ProcessedText(object):
 
     @staticmethod
     def calculate_is_text_english(text):
+        logger = logging.getLogger("%s.ProcessedText.calculate_is_text_english" % APP_NAME)
+        logger.debug("entry. text: %s" % text)
         words = nltk.word_tokenize(text)
         text_vocab = set(w.lower() for w in words if w.lower().isalpha())
         if len(text_vocab) == 0:
             # Can't do much here if there are no words!
-            return False
-        unusual_words = text_vocab.difference(ProcessedText.english_vocab)
-        if float(len(unusual_words)) / float(len(text_vocab)) >= ProcessedText.unusual_proportion_threshold:
-            return False
-        return True
+            return_value = False
+        else:
+            unusual_words = text_vocab.difference(ProcessedText.english_vocab)
+            unusual_proportion = float(len(unusual_words)) / float(len(text_vocab))
+            logger.debug("unusual proportion: '%s'" % (unusual_proportion, ))
+            if unusual_proportion  >= ProcessedText.unusual_proportion_threshold:
+                return_value = False
+            else:
+                return_value = True
+        logger.debug("returning: %s" % return_value)
+        return return_value
 
     @staticmethod
     def calculate_is_interesting(text):

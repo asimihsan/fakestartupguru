@@ -13,7 +13,8 @@ from ProcessedText import ProcessedText, ProcessedTextJSONEncoder, ProcessedText
 from LanguageModel import UnigramMaximumLikelihoodLanguageModel, \
                           BigramMaximumLikelihoodLanguageModel, \
                           TrigramMaximumLikelihoodLanguageModel, \
-                          QuadgramMaximumLikelihoodLanguageModel
+                          QuadgramMaximumLikelihoodLanguageModel, \
+                          HMMTrigramMaximumLikelihoodModel
 
 # -----------------------------------------------------------------------------
 #   Constants.
@@ -22,10 +23,11 @@ APP_NAME = "generator_language_model"
 LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
 LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
 LANGUAGE_MODELS = [ \
-                   UnigramMaximumLikelihoodLanguageModel,
+                   #UnigramMaximumLikelihoodLanguageModel,
                    BigramMaximumLikelihoodLanguageModel,
                    TrigramMaximumLikelihoodLanguageModel,
-                   QuadgramMaximumLikelihoodLanguageModel,
+                   #QuadgramMaximumLikelihoodLanguageModel,
+                   HMMTrigramMaximumLikelihoodModel,
                   ]
 # -----------------------------------------------------------------------------
 
@@ -49,7 +51,7 @@ def use_language_model(language_model_cls, processed_texts, settings):
     lm = language_model_cls(processed_texts, settings)
     lm.train()
     logger.debug("generated sentences:")
-    for i in xrange(5):
+    for i in xrange(20):
         logger.debug(lm.generate())
 
 def main():
@@ -87,12 +89,6 @@ def main():
 
     for language_model in LANGUAGE_MODELS:
         use_language_model(language_model, relevant_biographies, settings)
-
-    try:
-        import ipdb; ipdb.set_trace()
-    except:
-        import pdb; pdb.set_trace()
-
 
 if __name__ == "__main__":
     random.seed(4)

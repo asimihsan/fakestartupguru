@@ -4,6 +4,9 @@ import requests
 import logging
 import datetime
 import time
+import random
+import re
+import string
 
 import models
 
@@ -11,6 +14,7 @@ import models
 #   Constants.
 # -----------------------------------------------------------------------------
 APP_NAME = "utilities"
+re_leading_space_before_punctuation = re.compile("\s+(%s)" % "|".join([re.escape(elem) for elem in string.punctuation]))
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -26,6 +30,18 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 # -----------------------------------------------------------------------------
 
+def weighted_choice(choices):
+   total = sum(w for c, w in choices)
+   r = random.uniform(0, total)
+   upto = 0
+   for c, w in choices:
+      if upto + w > r:
+         return c
+      upto += w
+   assert False, "Shouldn't get here"
+
+def strip_leading_spaces_on_punctuation(input_string):
+    return re_leading_space_before_punctuation.sub(r'\1', input_string)
 
 class HttpFetcher(object):
     # -------------------------------------------------------------------------
