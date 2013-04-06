@@ -88,7 +88,7 @@ class ProcessedText(object):
     maximum_ngram_size = 4
 
     @staticmethod
-    def is_text_english(text):
+    def calculate_is_text_english(text):
         words = nltk.word_tokenize(text)
         text_vocab = set(w.lower() for w in words if w.lower().isalpha())
         if len(text_vocab) == 0:
@@ -100,7 +100,7 @@ class ProcessedText(object):
         return True
 
     @staticmethod
-    def is_interesting(text):
+    def calculate_is_interesting(text):
         words = nltk.word_tokenize(text)
         if len(words) <= ProcessedText.interesting_words_threshold:
             return False
@@ -139,8 +139,11 @@ class ProcessedText(object):
         return_value = {}
         return_value['id'] = self.id
         return_value['text'] = self.text
-        return_value['is_text_english'] = self.is_text_english
-        return_value['is_interesting'] = self.is_interesting
+        return_value['is_text_english'] = getattr(self, "is_text_english", False)
+        return_value['is_interesting'] = getattr(self, "is_interesting", False)
+        if self.is_text_english == False or self.is_interesting == False:
+            return return_value
+
         return_value['tags_words_counts'] = self.tags_words_counts
         return_value['tagged_sentences'] = self.tagged_sentences
 
@@ -175,12 +178,12 @@ class ProcessedText(object):
         #   skip the processing below and set some flags to make filtering
         #   easier.
         # ---------------------------------------------------------------------
-        if self.is_text_english(self.text) == False:
+        if self.calculate_is_text_english(self.text) == False:
             logger.debug("official '%s' does not have English bio_text" % self.id)
             self.is_text_english = False
             return
         self.is_text_english = True
-        if self.is_interesting(self.text) == False:
+        if self.calculate_is_interesting(self.text) == False:
             logger.debug("official '%s' does not have interesting bio_text" % self.id)
             self.is_interesting = False
             return
@@ -272,16 +275,13 @@ class ProcessedText(object):
             #   named entities have been added as "NE-*" tags.
             # -----------------------------------------------------------------
             for i in xrange(1, self.maximum_ngram_size + 1):
-                padded_words = [self.START_SYMBOL] * (i - 1) + words
-                if i > 1:
-                    padded_words.append(self.STOP_SYMBOL)
+                number_of_start_symbols = max(i-1, 1)
+                padded_words = [self.START_SYMBOL] * number_of_start_symbols + words + [self.STOP_SYMBOL]
                 padded_word_ngrams = nltk.ngrams(padded_words, i)
                 for ngram in padded_word_ngrams:
                     self.ngram_words[i][ngram] = self.ngram_words[i].get(ngram, 0) + 1
 
-                padded_tags = [self.START_SYMBOL] * (i - 1) + tags
-                if i > 1:
-                    padded_tags.append(self.STOP_SYMBOL)
+                padded_tags = [self.START_SYMBOL] * number_of_start_symbols + tags + [self.STOP_SYMBOL]
                 padded_tag_ngrams = nltk.ngrams(padded_tags, i)
                 for ngram in padded_tag_ngrams:
                     self.ngram_tags[i][ngram] = self.ngram_tags[i].get(ngram, 0) + 1

@@ -4,11 +4,16 @@ import os
 import sys
 import pprint
 import json
+import random
+import copy
+import cPickle as pickle
 
-import models
 from settings import Settings
 from ProcessedText import ProcessedText, ProcessedTextJSONEncoder, ProcessedTextJSONDecoder
-from LanguageModel import UnigramMaximumLikelihoodLanguageModel
+from LanguageModel import UnigramMaximumLikelihoodLanguageModel, \
+                          BigramMaximumLikelihoodLanguageModel, \
+                          TrigramMaximumLikelihoodLanguageModel, \
+                          QuadgramMaximumLikelihoodLanguageModel
 
 # -----------------------------------------------------------------------------
 #   Constants.
@@ -18,6 +23,9 @@ LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
 LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
 LANGUAGE_MODELS = [ \
                    UnigramMaximumLikelihoodLanguageModel,
+                   BigramMaximumLikelihoodLanguageModel,
+                   TrigramMaximumLikelihoodLanguageModel,
+                   QuadgramMaximumLikelihoodLanguageModel,
                   ]
 # -----------------------------------------------------------------------------
 
@@ -40,7 +48,6 @@ def use_language_model(language_model_cls, processed_texts, settings):
 
     lm = language_model_cls(processed_texts, settings)
     lm.train()
-    logger.debug("perplexity is: %s" % lm.get_perplexity())
     logger.debug("generated sentences:")
     for i in xrange(5):
         logger.debug(lm.generate())
@@ -64,16 +71,30 @@ def main():
     #   Load processed biographies, then grab out the interesting English
     #   ones.
     # -------------------------------------------------------------------------
-    logger.debug("loading processed data from JDON: '%s'" % settings.analyzer_tagged_chunked_filepath)
-    with open(settings.analyzer_tagged_chunked_filepath, "rb") as f_in:
-        processed_biographies = json.load(f_in, cls=ProcessedTextJSONDecoder)
+    if os.path.isfile(settings.analyzer_tagged_chunked_pickle_filepath):
+        logger.debug("loading processed data from pickle: '%s'" % settings.analyzer_tagged_chunked_pickle_filepath)
+        with open(settings.analyzer_tagged_chunked_pickle_filepath, "rb") as f_in:
+            processed_biographies = pickle.load(f_in)
+    else:
+        logger.debug("loading processed data from JSON: '%s'" % settings.analyzer_tagged_chunked_filepath)
+        with open(settings.analyzer_tagged_chunked_filepath, "rb") as f_in:
+            processed_biographies = json.load(f_in, cls=ProcessedTextJSONDecoder)
     relevant_biographies = [elem for elem in processed_biographies
-                            if elem.is_interesting == True and elem.is_text_english]
+                            if getattr(elem, "is_interesting", False) == True and
+                               getattr(elem, "is_text_english", False) == True]
+    random.shuffle(relevant_biographies)
     # -------------------------------------------------------------------------
 
     for language_model in LANGUAGE_MODELS:
         use_language_model(language_model, relevant_biographies, settings)
 
+    try:
+        import ipdb; ipdb.set_trace()
+    except:
+        import pdb; pdb.set_trace()
+
+
 if __name__ == "__main__":
+    random.seed(4)
     main()
 

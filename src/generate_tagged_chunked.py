@@ -7,6 +7,7 @@ import sys
 import nltk
 import pprint
 import json
+import cPickle as pickle
 
 from settings import Settings
 import models
@@ -33,19 +34,9 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 # -----------------------------------------------------------------------------
 
-def get_processed_biographies(settings, refresh=False):
+def get_processed_biographies(settings):
     logger = logging.getLogger("%s.get_processed_biographies" % APP_NAME)
     logger.debug("entry.")
-
-    # -------------------------------------------------------------------------
-    #   If we already have the data available in JSON then load it;
-    #   this takes a long time to do.
-    # -------------------------------------------------------------------------
-    if refresh == False and os.path.isfile(settings.analyzer_tagged_chunked_filepath):
-        logger.debug("JSON data is available here: '%s'" % settings.analyzer_tagged_chunked_filepath)
-        with open(settings.analyzer_tagged_chunked_filepath, "rb") as f_in:
-            return json.load(f_in, cls=ProcessedTextJSONDecoder)
-    # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
     #   Get all Officials with available biographies.
@@ -62,7 +53,7 @@ def get_processed_biographies(settings, refresh=False):
     #   Process all the biographies for all officials.
     # -------------------------------------------------------------------------
     processed_biographies = [ProcessedText(id = official.id, text = official.bio_text)
-                             for official in officials[:50]]
+            for official in officials]
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
@@ -70,6 +61,8 @@ def get_processed_biographies(settings, refresh=False):
     # -------------------------------------------------------------------------
     with open(settings.analyzer_tagged_chunked_filepath, "wb") as f_out:
         json.dump(processed_biographies, f_out, sort_keys=True, cls=ProcessedTextJSONEncoder)
+    with open(settings.analyzer_tagged_chunked_pickle_filepath, "wb") as f_out:
+        pickle.dump(processed_biographies, f_out, protocol=pickle.HIGHEST_PROTOCOL)
     # -------------------------------------------------------------------------
 
     return processed_biographies
@@ -83,11 +76,8 @@ def main():
     # -------------------------------------------------------------------------
     #   Load processed biographies. This is a list of ProcessedText objects.
     # -------------------------------------------------------------------------
-    processed_biographies = get_processed_biographies(settings, refresh=True)
-    #processed_biographies = get_processed_biographies(settings)
+    processed_biographies = get_processed_biographies(settings)
     # -------------------------------------------------------------------------
-
-    import ipdb; ipdb.set_trace()
 
 if __name__ == "__main__":
     main()

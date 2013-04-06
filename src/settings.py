@@ -29,6 +29,11 @@ class Settings(object):
         return os.path.abspath(os.path.join(__file__, os.pardir, relative_path))
 
     @property
+    def analyzer_tagged_chunked_pickle_filepath(self):
+        relative_path = self.yaml_object['analyzer']['tagged_chunked_pickle_filepath']
+        return os.path.abspath(os.path.join(__file__, os.pardir, relative_path))
+
+    @property
     def generator_use_kfold_cross_validation(self):
         return self.yaml_object['generator']['use_kfold_cross_validation']
 
