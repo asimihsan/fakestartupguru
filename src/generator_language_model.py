@@ -8,7 +8,7 @@ import json
 import models
 from settings import Settings
 from ProcessedText import ProcessedText, ProcessedTextJSONEncoder, ProcessedTextJSONDecoder
-from LanguageModel import UnigramLanguageModel
+from LanguageModel import UnigramMaximumLikelihoodLanguageModel
 
 # -----------------------------------------------------------------------------
 #   Constants.
@@ -38,7 +38,7 @@ def use_language_model(language_model_cls, processed_texts, settings):
     logger = logging.getLogger("%s.use_language_model" % APP_NAME)
     logger.debug("entry. language_model_cls: %s" % language_model_cls)
 
-    lm = language_model_cls(processed_texts)
+    lm = language_model_cls(processed_texts, settings)
     lm.train()
     logger.debug("perplexity is: %s" % lm.get_perplexity())
     logger.debug("generated sentences:")

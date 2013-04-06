@@ -20,13 +20,35 @@ gatherer:
 # ----------------------------------------------------------------------------
 analyzer:
 
-    # Number of K-folds to use for cross-validation.
-    number_of_k_folds:  10
-
     # Where to persist the tagged and chunked data as JSON. This takes
     # a long time to generate so will be useful to store off.
     tagged_chunked_filepath:    "../data/tagged_chunked.json"
 # ----------------------------------------------------------------------------
 
+# ----------------------------------------------------------------------------
+#   Generator settings.
+# ----------------------------------------------------------------------------
+generator:
+
+    # Number of K-folds to use for cross-validation.
+    # Also how much data to hold back for testing, i.e. we split data into
+    # training : testing
+    # Then divide training into "k" pieces for k-fold cross validation.
+    use_kfold_cross_validation: False
+    number_of_k_folds:  10
+    kfold_testing_proportion:   0.1
+    
+    # For non-K-fold cross validation what proportion of data to hold
+    # back for cross-validation and testing. We split data into:
+    #   training : cross_validation : testing
+    # - training is used to develop the language model itself, i.e. the
+    #   counts.
+    # - cross_validation is used to find the best lambdas or other model
+    #   parameters.
+    # - testing is used to determine the model's goodness; we evaluate
+    #   this using perplexity.
+    non_kfold_cross_validation_proportion: 0.1
+    non_kfold_testing_proportion: 0.1
+# ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
