@@ -23,7 +23,7 @@ APP_NAME = "generator_language_model"
 LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
 LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
 LANGUAGE_MODELS = [ \
-                   #UnigramMaximumLikelihoodLanguageModel,
+                   UnigramMaximumLikelihoodLanguageModel,
                    BigramMaximumLikelihoodLanguageModel,
                    TrigramMaximumLikelihoodLanguageModel,
                    #QuadgramMaximumLikelihoodLanguageModel,
@@ -51,7 +51,7 @@ def use_language_model(language_model_cls, processed_texts, settings):
     lm = language_model_cls(processed_texts, settings)
     lm.train()
     logger.debug("generated sentences:")
-    for i in xrange(20):
+    for i in xrange(0):
         logger.debug(lm.generate())
 
 def main():

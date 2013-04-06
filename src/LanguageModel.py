@@ -11,7 +11,7 @@ import re
 import string
 import pprint
 
-from utilities import weighted_choice, strip_leading_spaces_on_punctuation
+from utilities import weighted_choice, strip_leading_spaces_on_punctuation, memoize
 
 # -----------------------------------------------------------------------------
 #   Constants.
@@ -71,6 +71,7 @@ class LanguageModel(object):
         assert(self.processed_texts is not None)
         assert(self.settings is not None)
 
+    @memoize
     def convert_tokens_to_rare_tokens(self, tokens):
         rare_tokens = []
         for word in tokens:
@@ -84,6 +85,7 @@ class LanguageModel(object):
         rare_tokens = tuple(rare_tokens)
         return rare_tokens
 
+    @memoize
     def convert_tokens_to_basic_rare_tokens(self, tokens):
         rare_token = self.infrequent_word_tokens[-1][-1]
         rare_tokens = []
@@ -112,6 +114,8 @@ class HMMTrigramMaximumLikelihoodModel(LanguageModel):
         pass
 
     def train(self):
+        logger = logging.getLogger("%s.HMMTrigramMaximumLikelihoodModel.train" % APP_NAME)
+
         # ---------------------------------------------------------------------
         #   For q_ML maximum likelihood language models no parameters to
         #   cross validate, so split up input into training and testing.
@@ -184,19 +188,29 @@ class HMMTrigramMaximumLikelihoodModel(LanguageModel):
         #   Hence go through all tokens and replace infrequent tokens with
         #   an appropriate rare token from self.infrequent_word_tokens
         #   for the purposes of training.
-        #
-        #   !!AI I think this is the cause of very low perplexities for
-        #   2-gram and up maximum likelihood models. Often there are less
-        #   instances of the denomenator than the numerator, because I think
-        #   you need to convert words to rare tokens, not whole ngrams.
         # ---------------------------------------------------------------------
         logger.debug("fixing up rare tokens in training set...")
         self.rare_counts = copy.copy(self.counts)
-        for (phrase, count) in self.counts.iteritems():
-            if count <= self.infrequent_count_threshold:
-                del self.rare_counts[phrase]
-                rare_key = self.convert_tokens_to_rare_tokens(phrase)
-                self.rare_counts[rare_key] = self.rare_counts.get(rare_key, 0) + count
+        for (phrase, phrase_count) in self.counts.iteritems():
+            #logger.debug('phrase: "%s", phrase_count: "%s"' % (phrase, phrase_count))
+            if phrase is None:
+                continue
+            new_phrase = []
+            for tag in phrase:
+                count = self.counts[(tag, )]
+                if count <= self.infrequent_count_threshold:
+                    rare_token = self.convert_tokens_to_rare_tokens((tag, ))
+                    new_phrase.append(rare_token[0])
+                else:
+                    new_phrase.append(tag)
+            new_phrase = tuple(new_phrase)
+            if new_phrase == phrase:
+                #logger.debug("phrase unchanged, no parts of it are rare.")
+                continue
+            #logger.debug("before: new_phrase: '%s', self.rare_counts[new_phrase]: '%s'" % (new_phrase, self.rare_counts.get(new_phrase, 0)))
+            self.rare_counts[new_phrase] = self.rare_counts.get(new_phrase, 0) + phrase_count
+            #logger.debug("after: new_phrase: '%s', self.rare_counts[new_phrase]: '%s'" % (new_phrase, self.rare_counts.get(new_phrase, 0)))
+            del self.rare_counts[phrase]
 
         # Convert all the counts to a log count; we don't need raw counts
         # any more.
@@ -210,7 +224,7 @@ class HMMTrigramMaximumLikelihoodModel(LanguageModel):
         #   Calculate the perplexity of the language model over the testing
         #   set.
         #
-        #   !!AI yea no time!
+        #   !!AI TODO
         # ---------------------------------------------------------------------
         logger.debug("calculating perplexity...")
         # ---------------------------------------------------------------------
@@ -255,11 +269,8 @@ class HMMTrigramMaximumLikelihoodModel(LanguageModel):
 
         return numerator - denomenator
 
-    def emission_tags_to_words(self):
-        pass
-
     def generate(self):
-        logger = logging.getLogger("%s.NGramMaximumLikelihoodLanguageModel.generate" % APP_NAME)
+        logger = logging.getLogger("%s.HMMTrigramMaximumLikelihoodModel.generate" % APP_NAME)
         logger.debug("entry.")
 
         # ---------------------------------------------------------------------
@@ -398,19 +409,29 @@ class NGramMaximumLikelihoodLanguageModel(LanguageModel):
         #   Hence go through all tokens and replace infrequent tokens with
         #   an appropriate rare token from self.infrequent_word_tokens
         #   for the purposes of training.
-        #
-        #   !!AI I think this is the cause of very low perplexities for
-        #   2-gram and up maximum likelihood models. Often there are less
-        #   instances of the denomenator than the numerator, because I think
-        #   you need to convert words to rare tokens, not whole ngrams.
         # ---------------------------------------------------------------------
         logger.debug("fixing up rare tokens in training set...")
         self.rare_counts = copy.copy(self.counts)
-        for (phrase, count) in self.counts.iteritems():
-            if count <= self.infrequent_count_threshold:
-                del self.rare_counts[phrase]
-                rare_key = self.convert_tokens_to_rare_tokens(phrase)
-                self.rare_counts[rare_key] = self.rare_counts.get(rare_key, 0) + count
+        for (phrase, phrase_count) in self.counts.iteritems():
+            #logger.debug('phrase: "%s", phrase_count: "%s"' % (phrase, phrase_count))
+            if phrase is None:
+                continue
+            new_phrase = []
+            for word in phrase:
+                count = self.counts[(word, )]
+                if count <= self.infrequent_count_threshold:
+                    rare_token = self.convert_tokens_to_rare_tokens((word, ))
+                    new_phrase.append(rare_token[0])
+                else:
+                    new_phrase.append(word)
+            new_phrase = tuple(new_phrase)
+            if new_phrase == phrase:
+                #logger.debug("phrase unchanged, no parts of it are rare.")
+                continue
+            #logger.debug("before: new_phrase: '%s', self.rare_counts[new_phrase]: '%s'" % (new_phrase, self.rare_counts.get(new_phrase, 0)))
+            self.rare_counts[new_phrase] = self.rare_counts.get(new_phrase, 0) + phrase_count
+            #logger.debug("after: new_phrase: '%s', self.rare_counts[new_phrase]: '%s'" % (new_phrase, self.rare_counts.get(new_phrase, 0)))
+            del self.rare_counts[phrase]
 
         # Convert all the counts to a log count; we don't need raw counts
         # any more.
@@ -425,6 +446,7 @@ class NGramMaximumLikelihoodLanguageModel(LanguageModel):
         #   set.
         # ---------------------------------------------------------------------
         logger.debug("calculating perplexity...")
+
         # This will be the sum of all log2 probabilities of all sentences in
         # the testing set under this language model.
         testing_probability = 0

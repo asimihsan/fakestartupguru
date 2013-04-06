@@ -7,6 +7,7 @@ import time
 import random
 import re
 import string
+import functools
 
 import models
 
@@ -29,6 +30,15 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 # -----------------------------------------------------------------------------
+
+def memoize(func):
+    cache = {}
+    @functools.wraps(func)
+    def wrap(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return wrap
 
 def weighted_choice(choices):
    total = sum(w for c, w in choices)
