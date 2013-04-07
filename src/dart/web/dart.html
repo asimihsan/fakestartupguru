@@ -16,7 +16,7 @@
         <link href='http://fonts.googleapis.com/css?family=Questrial|Lato:300,400,700,900,300italic,400italic,700italic,900italic|Trocchi' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="dart.css">
 
-        <!-- import the click-counter -->
+        <!-- import the text-generator -->
         <link rel="components" href="xtextgenerator.html">
     </head>
     <body data-spy="scroll" data-target=".navbar">
@@ -43,17 +43,15 @@
             </div>
         </div>
         <div class="body">
-            <section class="center" id="generator">
+            <section id="generator">
                 <div class="container">
                     <div class="row">
-                        <div class="span10 offset1">
-                            <div class="hero ">
+                        <div class="span8 offset2">
+                            <div class="hero">
                                 <!-- Main hero unit for a primary marketing message or call to action -->
                                 <h1>Fake Startup Guru</h1>
                                 <h2>Generate text based on the biographies of SW judges and mentors</h2>
-                                <div id="text_generator_container">
-                                    <div is="x-text-generator" id="text_generator" count="{{startingCount}}"></div>
-                                </div>
+                                <div is="x-text-generator" id="text_generator" class="clearfix"></div>
                             </div>
                         </div>
                     </div>
