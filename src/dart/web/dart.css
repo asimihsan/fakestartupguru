@@ -140,16 +140,17 @@ footer .rights {
 
 #text_generator {
   font-size: 120%;
-  width: 100%;
   position: relative;
   border: 1px solid #ccc;
   background-color: #fcfcfc;
   padding: 2em 2em 2em 2em;
+  line-height: 1.5em;
 }
 
 #headshot_image_container {
   float: left;
   margin-right: 2em;
+  margin-bottom: 2em;
 }
 
 #text_generator_button {
@@ -160,7 +161,22 @@ footer .rights {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+#text_generator_type {
   margin-top: 1em;
+}
+
+.hero h1, .hero h2 {
+  text-align: center;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Lato', sans-serif;
+}
+
+.container, #text_generator_text {
+  font-family: 'Noticia Text', serif;
 }
 
 @media (min-width: 979px) and (max-width: 1200px) {

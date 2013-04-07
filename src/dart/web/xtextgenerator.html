@@ -11,6 +11,18 @@
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam faucibus, turpis et consequat sagittis, lectus metus dictum est, ultrices tempus ligula nibh in nulla. Suspendisse cursus sapien at orci dictum adipiscing. Quisque auctor ligula nec massa placerat quis laoreet urna suscipit. Vestibulum rhoncus aliquet augue, eu placerat nisl dignissim in. Morbi laoreet, libero ut dapibus malesuada, elit metus tincidunt orci, faucibus condimentum leo urna ut sem. Curabitur at neque vitae magna sodales pellentesque. Pellentesque mauris odio, ultricies at aliquet placerat, euismod at leo. 
         </div>
         <div class="clearfix"></div>
+        <div id="text_generator_type">
+          <div class="control-group">
+            <label class="control-label">Generator type</label>
+            <div class="controls">
+              <select>
+                <option>Bigram Maximum Likelihood</option>
+                <option selected="selected">Trigram Maximum Likelihood</option>
+                <option>Trigram Hidden Markov Model</option>
+              </select>
+            </div>
+          </div>
+        </div>
         <div id="text_generator_button">
           <a class="btn btn-outline btn-large btn-dark" on-click="generate_text()">Moar!</a>
         </div>

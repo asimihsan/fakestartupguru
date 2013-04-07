@@ -44,13 +44,47 @@ Random random = new Random();
 // ----------------------------------------------------------------------------
 
 class TextGeneratorComponent extends WebComponent {
-
+  var data_path = "output.json";
+  Map< String, List<String> > data = null;
+  const int minimum_sentences = 3;
+  const int maximum_sentences = 8;
+  
+  // --------------------------------------------------------------------------
+  //  Initialization. Load data JSON, parse it.
+  // --------------------------------------------------------------------------
   void inserted() {
-    generate_text();
+    print("inserted entry. data is null? ${data == null}");
+    load_data_json();
   }
   
+  void load_data_json() {
+    print("load_data_json entry. data is null? ${data == null}");
+    if (data == null) {
+      print("load_data_json() is getting JSON...");
+      HttpRequest.getString(data_path)
+                 .then(processDataString)
+                 .catchError(handleError);
+    }
+    print("laod_data_json exit. data is null? ${data == null}");
+  }
+  
+  void processDataString(String jsonString) {
+    print("processDataString entry.");
+    data = json.parse(jsonString);
+    generate_text();
+  }
+
+  void handleError(AsyncError error) {
+    print("handleError entry. ${error}");
+    data = null;
+  }
+  // --------------------------------------------------------------------------
+  
   void generate_text() {
+    if (data == null)
+      load_data_json();
     set_headshot_image();
+    set_text();
   }
   
   void set_headshot_image() {
@@ -60,6 +94,37 @@ class TextGeneratorComponent extends WebComponent {
     headshot_image.src = headshot_url;
   }
   
-}
-
-
+  void set_text() {
+    Element text_generator_text = query("#text_generator_text");
+    if (data == null) {
+      text_generator_text.text = "Sorry, unable to load 'data.json', so can't generate texts.";
+      return;
+    }
+    
+    // ------------------------------------------------------------------------
+    //  Use data JSON to piece together some random sentences.
+    // ------------------------------------------------------------------------
+    SelectElement text_type = query("#text_generator_type select");
+    String key;
+    if (text_type.selectedIndex == 0)
+      key = "Bigram";
+    else if (text_type.selectedIndex == 1)
+      key = "Trigram";
+    else
+      key = "HMM";
+    List<String> sentences = data[key];
+    StringBuffer output_text = new StringBuffer();
+    int sentence_length = random.nextInt(maximum_sentences - minimum_sentences) + minimum_sentences;
+    for (int i = 0; i < sentence_length; i++) {
+      int random_sentence_index = random.nextInt(sentences.length);
+      String sentence = sentences[random_sentence_index];
+      output_text.write(sentence);
+      if (i < sentence_length)
+        output_text.write(" ");
+    }
+    text_generator_text.text = output_text.toString();
+    // ------------------------------------------------------------------------
+    
+  } // void set_text()
+  
+} // class TextGeneratorComponent extends WebComponent
