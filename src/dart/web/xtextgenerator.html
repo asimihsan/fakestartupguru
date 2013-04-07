@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<html>
+  <body>
+    <element name="x-text-generator" constructor="TextGeneratorComponent" extends="div">
+      <template>
+        <div>
+          <button on-click="increment()">Click me</button><br />
+          <span>(click count: {{count}})</span>
+        </div>
+      </template>
+      <script type="application/dart" src="xtextgenerator.dart"></script>
+      <script src="packages/browser/dart.js"></script>
+    </element>
+  </body>
+</html>
