@@ -52,7 +52,7 @@ class LanguageModel(object):
                                #(re.compile("^.*[A-Z]$"),       "__LAST_CAPITAL__"),
                                (None,                          "__RARE__"),
                              ]
-    infrequent_count_threshold = 1
+    infrequent_count_threshold = 2
     start_symbol = "__START__"
     stop_symbol = "__STOP__"
     sentinels = set([start_symbol, stop_symbol])
@@ -316,6 +316,8 @@ class HMMTrigramMaximumLikelihoodModel(LanguageModel):
         # ---------------------------------------------------------------------
 
         joined_sentence = ' '.join(word for word in sentence)
+        if not joined_sentence.endswith("."):
+            joined_sentence += "."
         return strip_leading_spaces_on_punctuation(joined_sentence)
 
 class NGramMaximumLikelihoodLanguageModel(LanguageModel):
@@ -496,6 +498,8 @@ class NGramMaximumLikelihoodLanguageModel(LanguageModel):
             sentence.append(next_word)
 
         joined_sentence = ' '.join([word for word in sentence if word not in self.sentinels])
+        if not joined_sentence.endswith("."):
+            joined_sentence += "."
         return strip_leading_spaces_on_punctuation(joined_sentence)
 
     def transmission_words(self, chunk, counts):

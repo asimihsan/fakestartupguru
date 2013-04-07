@@ -22,8 +22,9 @@ from LanguageModel import UnigramMaximumLikelihoodLanguageModel, \
 APP_NAME = "generator_language_model"
 LOG_PATH = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "logs"))
 LOG_FILEPATH = os.path.abspath(os.path.join(LOG_PATH, "%s.log" % APP_NAME))
+OUTPUT_DIRECTORY = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, "output"))
 LANGUAGE_MODELS = [ \
-                   UnigramMaximumLikelihoodLanguageModel,
+                   #UnigramMaximumLikelihoodLanguageModel,
                    BigramMaximumLikelihoodLanguageModel,
                    TrigramMaximumLikelihoodLanguageModel,
                    #QuadgramMaximumLikelihoodLanguageModel,
@@ -44,15 +45,26 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 # -----------------------------------------------------------------------------
 
-def use_language_model(language_model_cls, processed_texts, settings):
-    logger = logging.getLogger("%s.use_language_model" % APP_NAME)
+def get_trained_language_model(language_model_cls, processed_texts, settings):
+    logger = logging.getLogger("%s.get_trained_language_models" % APP_NAME)
     logger.debug("entry. language_model_cls: %s" % language_model_cls)
-
     lm = language_model_cls(processed_texts, settings)
     lm.train()
+    return lm
+
+def use_language_model(lm, settings, number_of_sentences=100):
+    logger = logging.getLogger("%s.use_language_model" % APP_NAME)
+    logger.debug("entry.")
+
     logger.debug("generated sentences:")
-    for i in xrange(0):
-        logger.debug(lm.generate())
+    if not os.path.isdir(OUTPUT_DIRECTORY):
+        os.makedirs(OUTPUT_DIRECTORY)
+    output_filepath = os.path.join(OUTPUT_DIRECTORY, "%s.txt" % lm.__class__.__name__)
+    with open(output_filepath, "a") as f_out:
+        for i in xrange(number_of_sentences):
+            sentence = lm.generate()
+            f_out.write("%s\n" % sentence)
+            logger.debug(sentence)
 
 def main():
     logger = logging.getLogger("%s.main" % APP_NAME)
@@ -87,8 +99,11 @@ def main():
     random.shuffle(relevant_biographies)
     # -------------------------------------------------------------------------
 
-    for language_model in LANGUAGE_MODELS:
-        use_language_model(language_model, relevant_biographies, settings)
+    language_models = [get_trained_language_model(cls, relevant_biographies, settings)
+                       for cls in LANGUAGE_MODELS]
+    for i in xrange(10000):
+        for language_model in language_models:
+            use_language_model(language_model, settings)
 
 if __name__ == "__main__":
     random.seed(4)
