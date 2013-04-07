@@ -1,5 +1,6 @@
 Cython==0.18
 PyYAML==3.10
+boto==2.8.0
 cssselect==0.8
 httplib2==0.8
 ipdb==0.7
