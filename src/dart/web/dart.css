@@ -58,26 +58,26 @@ body.dark {
   padding-top: 0;
 }
 section.blue {
-  padding: 60px 0;
+  padding: 2em 0 0 0;
   background: #8bccef;
   color: white;
 }
 section.red {
-  padding: 60px 0;
+  padding: 2emx 0 0 0;
   background: #fc7364;
   color: white;
 }
 section.yellow {
-  padding: 60px 0;
+  padding: 2em 0 0 0;
   background: #fbcc71;
 }
 section.dark {
-  padding: 60px 0;
+  padding: 2em 0 0 0;
   background: #393939;
   color: white;
 }
 section.white {
-  padding: 60px 0;
+  padding: 2em 0 0 0;
   background: white;
 }
 footer {
@@ -143,7 +143,7 @@ footer .rights {
   position: relative;
   border: 1px solid #ccc;
   background-color: #fcfcfc;
-  padding: 2em 2em 2em 2em;
+  padding: 2em 2em 1em 2em;
   line-height: 1.5em;
 }
 
@@ -177,6 +177,20 @@ h1, h2, h3, h4, h5, h6 {
 
 .container, #text_generator_text {
   font-family: 'Noticia Text', serif;
+}
+
+#about, #details, #about li, #details li {
+  font-size: 110%;
+  line-height: 1.8em;
+}
+
+#about p, #details p, #about ul, #details ul {
+  margin: 0 0 2em 0;
+}
+
+#details pre {
+  margin-top: -1em;
+  margin-bottom: 1em;
 }
 
 @media (min-width: 979px) and (max-width: 1200px) {

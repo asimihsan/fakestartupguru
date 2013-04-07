@@ -66,13 +66,13 @@ def main():
     # JS
     js_files = [elem for elem in glob.glob(os.path.join(web_output_directory, "js", "*.*"))
                  if not os.path.isdir(elem)]
-    files_to_upload.extend(js_files)
+    #files_to_upload.extend(js_files)
 
     # packages
     # !!AI TODO
 
     # !!AI REMOVEME
-    files_to_upload = [elem for elem in glob.glob(os.path.join(web_output_directory, "dart.html"))]
+    #files_to_upload = [elem for elem in glob.glob(os.path.join(web_output_directory, "dart.html"))]
     destination_subpaths = [os.sep.join(elem.split(os.sep)[len(root_dir_elems):])
                             for elem in files_to_upload]
     # -------------------------------------------------------------------------
@@ -85,27 +85,28 @@ def main():
     # -------------------------------------------------------------------------
     with contextlib.closing(boto.connect_s3()) as conn:
         with contextlib.closing(boto.connect_cloudfront()) as conn_cloudfront:
-            cloudfront_distribution = [elem for elem in conn_cloudfront.get_all_distributions()
-                                       if elem.id == cloudfront_id][0]
-            cloudfront_distribution = cloudfront_distribution.get_distribution()
-            bucket = conn.get_bucket(s3_bucket_name)
+            try:
+                cloudfront_distribution = [elem for elem in conn_cloudfront.get_all_distributions()
+                                           if elem.id == cloudfront_id][0]
+                cloudfront_distribution = cloudfront_distribution.get_distribution()
+                bucket = conn.get_bucket(s3_bucket_name)
 
-            for (full_filepath, subpath) in zip(files_to_upload, destination_subpaths):
-                logger.debug("compressing '%s', then uploading to '%s'" % (full_filepath, subpath))
-                compressed_full_filepath = compress_filepath(full_filepath)
-                try:
-                    logger.debug("starting upload...")
-                    key = bucket.delete_key(subpath)
-                    key = bucket.new_key(subpath)
-                    key.set_metadata("Content-Encoding", "gzip")
-                    key.set_contents_from_filename(compressed_full_filepath)
-                    key.make_public()
-                    logger.debug("finished upload.")
-                finally:
-                    os.remove(compressed_full_filepath)
-
-            logger.debug("creating cloudfront invalidation request.")
-            conn_cloudfront.create_invalidation_request(cloudfront_distribution.id, destination_subpaths)
+                for (full_filepath, subpath) in zip(files_to_upload, destination_subpaths):
+                    logger.debug("compressing '%s', then uploading to '%s'" % (full_filepath, subpath))
+                    compressed_full_filepath = compress_filepath(full_filepath)
+                    try:
+                        logger.debug("starting upload...")
+                        key = bucket.delete_key(subpath)
+                        key = bucket.new_key(subpath)
+                        key.set_metadata("Content-Encoding", "gzip")
+                        key.set_contents_from_filename(compressed_full_filepath)
+                        key.make_public()
+                        logger.debug("finished upload.")
+                    finally:
+                        os.remove(compressed_full_filepath)
+            finally:
+                logger.debug("creating cloudfront invalidation request.")
+                conn_cloudfront.create_invalidation_request(cloudfront_distribution.id, destination_subpaths)
     # -------------------------------------------------------------------------
 
     # -------------------------------------------------------------------------
