@@ -79,3 +79,16 @@ class Settings(object):
     def builder_re_reject(self):
         return self.yaml_object['builder']['re_reject']
 
+    @property
+    def deploy_s3_bucket_name(self):
+        return self.yaml_object['deploy']['s3_bucket_name']
+
+    @property
+    def deploy_cloudfront_id(self):
+        return self.yaml_object['deploy']['cloudfront_id']
+
+    @property
+    def deploy_web_output_directory(self):
+        relative_path = self.yaml_object['deploy']['web_output_directory']
+        return os.path.abspath(os.path.join(__file__, os.pardir, relative_path))
+

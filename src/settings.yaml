@@ -74,3 +74,18 @@ builder:
     # Regular expression used to reject odd sentences.
     re_reject:     "[)][A-Za-z0-9;]|[A-Za-z0-9;][(]" 
 # ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+#   Deploy script settings.
+# ----------------------------------------------------------------------------
+deploy:
+    # S3 bucket name.
+    s3_bucket_name:         "www.fakestartupguru.com"
+    
+    # Cloudfront ID.
+    cloudfront_id:          "E1PK6SNHZJSR9Y"
+
+    # Web output directory of Dart after being built by dwc Web UI compiler.
+    web_output_directory:   "dart/web/out" 
+
+# ----------------------------------------------------------------------------
