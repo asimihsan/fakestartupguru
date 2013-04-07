@@ -53,3 +53,24 @@ generator:
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
+#   JSON output builder settings.
+# ----------------------------------------------------------------------------
+builder:
+    # Data directory
+    data_directory:     "../output/"
+
+    # Mapping of filenames to keys
+    filename_to_key:
+        -   "BigramMaximumLikelihoodLanguageModel.txt":        "Bigram"
+        -   "TrigramMaximumLikelihoodLanguageModel.txt":       "Trigram"
+        -   "HMMTrigramMaximumLikelihoodModel.txt":            "HMM"
+           
+    # Output location of the JSON file
+    output_json:    "../output/output.json" 
+
+    # Minimum sentence length
+    minimum_sentence_length:    10
+
+    # Regular expression used to reject odd sentences.
+    re_reject:     "[)][A-Za-z0-9;]|[A-Za-z0-9;][(]" 
+# ----------------------------------------------------------------------------
